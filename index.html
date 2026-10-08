@@ -121,10 +121,12 @@
     .score-detail{display:flex;flex-wrap:wrap;justify-content:space-between;gap:3px 12px;margin:4px 0 0 3em;color:#61758b;font-size:.82rem;font-variant-numeric:tabular-nums}
     .score-detail span{white-space:nowrap}
     @media(max-width:700px){#scores .choice span,#fractionScores .choice span{white-space:normal}#scores select,#fractionScores select{max-width:100%}.score-entry{padding:9px 10px}.score-main{gap:5px}.score-detail{margin-left:2.7em;font-size:.77rem}}
+    .sync-notice{max-width:1040px;margin:12px auto 0;padding:10px 24px;color:#153f70;font-size:.91rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.sync-notice .link{font-size:inherit}
   </style>
 </head>
 <body>
   <header class="top"><div class="shell"><div class="brand"><span class="mark" aria-hidden="true">+</span>Mathetrainer</div><button id="homeTop" type="button">Startseite</button></div></header>
+  <div id="syncNotice" class="sync-notice hidden" role="status" aria-live="polite"><span id="syncText"></span><button id="syncNow" class="link" type="button">Jetzt abgleichen</button></div>
   <main class="shell main">
     <section id="home">
       <p class="eyebrow">Kopfrechnen üben</p><h1>Rechnen auf Zeit.</h1><p class="intro home-intro">Rechenarten, Zeit und Zahlenraum wählen. Dann kann es losgehen.</p>
@@ -172,6 +174,42 @@
     const onlyProducts=ops=>ops.length>0&&ops.every(op=>op==='multiplication'||op==='division');
     function updateTableOptions(){const setup=checkedOperations('operation'),score=checkedOperations('scoreOperation');$('smallTablesArea').classList.toggle('hidden',!onlyProducts(setup)||$('numberType').value!=='any');$('scoreSmallTablesArea').classList.toggle('hidden',!onlyProducts(score)||$('scoreNumberType').value!=='any');}
     let active=false, interval=null, state=null, deadline=0, previous='', typed='', scoreRequest=0, session=null, profile=null, levelProgress={};
+    const SCORE_QUEUE_KEY='mathetrainer-pending-scores-v1';
+    let scoreSyncing=false;
+    function pendingScores(){try{const rows=JSON.parse(localStorage.getItem(SCORE_QUEUE_KEY)||'[]');return Array.isArray(rows)?rows:[];}catch{return [];}}
+    function writePendingScores(rows){localStorage.setItem(SCORE_QUEUE_KEY,JSON.stringify(rows));updateSyncNotice();}
+    function updateSyncNotice(){const count=pendingScores().length;$('syncNotice').classList.toggle('hidden',!count);$('syncText').textContent=`${count} ${count===1?'Ergebnis wartet':'Ergebnisse warten'} auf den Abgleich. Die Daten sind nur auf diesem Gerät gespeichert.`;$('syncNow').disabled=scoreSyncing||!navigator.onLine;}
+    async function scoreExists(row){
+      const url=new URL(`${SUPABASE_URL}/rest/v1/mt_scores`);
+      url.searchParams.set('select','player_name,correct_count,attempt_count,operation_mode,duration_seconds');
+      url.searchParams.set('created_at',`eq.${row.created_at}`);
+      url.searchParams.set('limit','1');
+      const response=await fetch(url,{headers:{apikey:SUPABASE_KEY},cache:'no-store'});
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      const matches=await response.json();
+      return matches.some(saved=>saved.player_name===row.player_name&&saved.correct_count===row.correct_count&&saved.attempt_count===row.attempt_count&&saved.operation_mode===row.operation_mode&&saved.duration_seconds===row.duration_seconds);
+    }
+    async function flushPendingScores(){
+      if(scoreSyncing||!navigator.onLine||!pendingScores().length)return;
+      scoreSyncing=true;updateSyncNotice();
+      try{
+        const send=async()=>{
+          for(const entry of pendingScores()){
+            if(!navigator.onLine)break;
+            // An interrupted POST may have succeeded. Look up its fixed timestamp before retrying.
+            if(!await scoreExists(entry.row)){
+              const response=await fetch(`${SUPABASE_URL}/rest/v1/mt_scores`,{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(entry.row)});
+              if(!response.ok)throw new Error(`HTTP ${response.status}`);
+            }
+            writePendingScores(pendingScores().filter(saved=>saved.id!==entry.id));
+            if(entry.id===state?.queuedScoreId)$('saveMessage').textContent='Ergebnis in der öffentlichen Bestenliste gespeichert.';
+          }
+        };
+        if(navigator.locks)await navigator.locks.request('mathetrainer-score-sync',send);
+        else await send();
+      }catch{if(state?.queuedScoreId)$('saveMessage').textContent='Ergebnis ist auf diesem Gerät vorgemerkt. Der Abgleich wird später erneut versucht.';}
+      finally{scoreSyncing=false;updateSyncNotice();}
+    }
     function show(page){pages.forEach(id=>$(id).classList.toggle('hidden',id!==page));syncGameHeight();window.scrollTo(0,0);}
     function syncGameHeight(){document.documentElement.style.setProperty('--game-height',`${Math.round(window.visualViewport?.height||window.innerHeight)}px`);}
     function selected(name){return Number(($(name)?.tagName==='SELECT'?$(name):document.querySelector(`input[name="${name}"]:checked`)).value);}
@@ -392,14 +430,30 @@
     $('fractionFields').addEventListener('click',event=>{const field=event.target.closest('[data-field]');if(field&&!fractionBusy){fractionField=field.dataset.field;renderFractionFields();}});
     $('deleteDigit').onclick=deleteDigit;$('checkAnswer').onclick=checkAnswer;
     document.addEventListener('keydown',e=>{if(!active||e.altKey||e.ctrlKey||e.metaKey)return;if(/^[0-9]$/.test(e.key)){e.preventDefault();addDigit(e.key)}else if(e.key==='Backspace'){e.preventDefault();deleteDigit()}else if(e.key==='Enter'){e.preventDefault();checkAnswer()}});
-    $('saveScore').onclick=async()=>{const name=$('playerName').value.trim().slice(0,20);if(!name){$('saveMessage').textContent='Bitte zuerst einen Namen oder ein Kürzel eingeben.';$('playerName').focus();return;}$('saveScore').disabled=true;$('saveMessage').textContent='Ergebnis wird gespeichert …';try{const row=state.kind==='fraction'?{player_name:name,duration_seconds:state.duration*60,elapsed_seconds:state.elapsedSeconds,operation_mode:`fraction:${state.fractionModes.join(',')}`,small_tables:false,operand_count:2,number_type:'any',range_max:10,correct_count:state.correct,attempt_count:state.attempts}:{player_name:name,duration_seconds:state.duration*60,elapsed_seconds:state.elapsedSeconds,operation_mode:state.operations.join(','),small_tables:state.smallTables,operand_count:state.operandCount,number_type:state.numberType,range_max:state.range,correct_count:state.correct,attempt_count:state.attempts};const response=await fetch(`${SUPABASE_URL}/rest/v1/mt_scores`,{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(row)});if(!response.ok)throw new Error(`HTTP ${response.status}`);$('saveMessage').textContent='Ergebnis in der öffentlichen Bestenliste gespeichert.';}catch{$('saveScore').disabled=false;$('saveMessage').textContent='Speichern derzeit nicht möglich. Bitte erneut versuchen.';}};
+    $('saveScore').onclick=()=>{
+      const name=$('playerName').value.trim().slice(0,20);
+      if(!name){$('saveMessage').textContent='Bitte zuerst einen Namen oder ein Kürzel eingeben.';$('playerName').focus();return;}
+      const row=state.kind==='fraction'?{player_name:name,duration_seconds:state.duration*60,elapsed_seconds:state.elapsedSeconds,operation_mode:`fraction:${state.fractionModes.join(',')}`,small_tables:false,operand_count:2,number_type:'any',range_max:10,correct_count:state.correct,attempt_count:state.attempts}:{player_name:name,duration_seconds:state.duration*60,elapsed_seconds:state.elapsedSeconds,operation_mode:state.operations.join(','),small_tables:state.smallTables,operand_count:state.operandCount,number_type:state.numberType,range_max:state.range,correct_count:state.correct,attempt_count:state.attempts};
+      row.created_at=new Date().toISOString();
+      const id=crypto.randomUUID();
+      try{writePendingScores([...pendingScores(),{id,row}]);}
+      catch{$('saveMessage').textContent='Lokales Speichern nicht möglich. Bitte Speicherplatz und Browser-Einstellungen prüfen.';return;}
+      state.queuedScoreId=id;$('saveScore').disabled=true;$('saveMessage').textContent='Ergebnis auf diesem Gerät gespeichert. Es wird bei Internetverbindung abgeglichen.';
+      flushPendingScores();
+    };
+    $('syncNow').onclick=flushPendingScores;
+    window.addEventListener('online',flushPendingScores);
+    window.addEventListener('storage',event=>{if(event.key===SCORE_QUEUE_KEY)updateSyncNotice();});
+    setInterval(()=>{if(!document.hidden)flushPendingScores();},60000);
     document.querySelectorAll('input[name="operation"],#numberType').forEach(el=>el.addEventListener('change',()=>{updateTableOptions();$('operationError').textContent='';}));
     document.querySelectorAll('input[name="scoreOperation"],input[name="scoreDuration"],input[name="scoreOperandCount"],#scoreRange,#scoreNumberType,#scoreSmallTables').forEach(el=>el.addEventListener('change',()=>{updateTableOptions();renderScores();}));
     document.querySelectorAll('input[name="fractionMode"]').forEach(el=>el.addEventListener('change',()=>{$('fractionError').textContent='';}));
     document.querySelectorAll('input[name="fractionScoreMode"],input[name="fractionScoreDuration"]').forEach(el=>el.addEventListener('change',renderFractionScores));
     updateTableOptions();
     if(client)client.auth.getSession().then(({data})=>{if(data.session&&localStorage.getItem('mathetrainer-pending-nickname'))openLevels();});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){tick();flushPendingScores();}});
+    updateSyncNotice();flushPendingScores();
+    if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
     window.visualViewport?.addEventListener('resize',syncGameHeight);
     window.addEventListener('resize',syncGameHeight);
     window.addEventListener('resize',()=>{if(active)fitProblem();});
