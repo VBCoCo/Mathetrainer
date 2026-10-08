@@ -108,6 +108,19 @@
     #game .fraction-solution{min-height:20px;font-size:.86rem;text-align:center;color:#52667e;font-weight:650}
     @media(max-width:700px){#home .fraction-card{grid-column:auto}#fractionSetup .card,#fractionScores .card{padding:16px}#fractionSetup h1,#fractionScores h1{font-size:1.9rem}#game .fraction-fields{gap:5px}#game .fraction-fields button{min-width:43px;min-height:40px}}
     @media(max-height:690px){#game .fraction-task{gap:4px}#game .fraction-bar{height:clamp(56px,13vh,85px)}#game .fraction-source{min-height:32px;font-size:1.7rem}#game .fraction-fields button{min-height:35px}#game .fraction-prompt{font-size:1rem}}
+    #scores,#fractionScores,#scores .card,#fractionScores .card{min-width:0;max-width:100%}
+    #scores .stack,#fractionScores .stack{grid-template-columns:minmax(0,1fr)}
+    #scores .stack>*,#fractionScores .stack>*{min-width:0}
+    #scores .choices,#fractionScores .choices{max-width:100%;flex-wrap:wrap}
+    .leaderboard{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+    .score-entry{min-width:0;border:1px solid #dce5ee;border-radius:12px;background:#f8fafc;padding:11px 13px}
+    .score-main{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;align-items:baseline;gap:8px;font-weight:750}
+    .score-rank{color:#476583}
+    .score-name{min-width:0;overflow-wrap:anywhere}
+    .score-stars{white-space:nowrap;color:#9a6813;font-variant-numeric:tabular-nums}
+    .score-detail{display:flex;flex-wrap:wrap;justify-content:space-between;gap:3px 12px;margin:4px 0 0 3em;color:#61758b;font-size:.82rem;font-variant-numeric:tabular-nums}
+    .score-detail span{white-space:nowrap}
+    @media(max-width:700px){#scores .choice span,#fractionScores .choice span{white-space:normal}#scores select,#fractionScores select{max-width:100%}.score-entry{padding:9px 10px}.score-main{gap:5px}.score-detail{margin-left:2.7em;font-size:.77rem}}
   </style>
 </head>
 <body>
@@ -268,11 +281,22 @@
     function displayScores(target,rows){
       target.replaceChildren();
       if(!rows.length){target.textContent='Noch keine Ergebnisse für diese Auswahl.';return;}
-      const wrap=document.createElement('div');wrap.className='table-wrap';
-      const table=document.createElement('table');table.innerHTML='<thead><tr><th>Platz</th><th>Name</th><th>Sterne</th><th>Trefferquote</th><th>Richtig</th></tr></thead>';
-      const body=document.createElement('tbody');
-      rows.forEach((r,i)=>{const tr=document.createElement('tr');[`${i+1}.`,r.player_name,`${starText(scoreStarUnits(r))} ★`,`${Math.round(scoreAccuracy(r)*100)} %`,fmt(r.correct_count)].forEach(value=>{const td=document.createElement('td');td.textContent=value;tr.append(td);});body.append(tr);});
-      table.append(body);wrap.append(table);target.append(wrap);
+      const list=document.createElement('ol');list.className='leaderboard';
+      const dateFormatter=new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'});
+      rows.forEach((r,i)=>{
+        const item=document.createElement('li');item.className='score-entry';
+        const main=document.createElement('div');main.className='score-main';
+        const rank=document.createElement('span');rank.className='score-rank';rank.textContent=`${i+1}.`;
+        const name=document.createElement('span');name.className='score-name';name.textContent=r.player_name;
+        const stars=document.createElement('span');stars.className='score-stars';stars.textContent=`${starText(scoreStarUnits(r))} ★`;
+        main.append(rank,name,stars);
+        const detail=document.createElement('div');detail.className='score-detail';
+        const date=document.createElement('span');const timestamp=new Date(r.created_at);
+        date.textContent=Number.isNaN(timestamp.getTime())?'Datum unbekannt':`${dateFormatter.format(timestamp)} Uhr`;
+        const stats=document.createElement('span');stats.textContent=`${Math.round(scoreAccuracy(r)*100)} % · ${fmt(r.correct_count)} richtig`;
+        detail.append(date,stats);item.append(main,detail);list.append(item);
+      });
+      target.append(list);
     }
     async function renderScores(){
       const request=++scoreRequest,duration=selected('scoreDuration'),range=selected('scoreRange'),operandCount=selected('scoreOperandCount'),numberType=$('scoreNumberType').value,operations=checkedOperations('scoreOperation'),smallTables=onlyProducts(operations)&&numberType==='any'&&$('scoreSmallTables').checked,target=$('scoreContent');
