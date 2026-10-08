@@ -193,6 +193,7 @@
       if(scoreSyncing||!navigator.onLine||!pendingScores().length)return;
       scoreSyncing=true;updateSyncNotice();
       try{
+        let synced=false;
         const send=async()=>{
           for(const entry of pendingScores()){
             if(!navigator.onLine)break;
@@ -202,11 +203,13 @@
               if(!response.ok)throw new Error(`HTTP ${response.status}`);
             }
             writePendingScores(pendingScores().filter(saved=>saved.id!==entry.id));
+            synced=true;
             if(entry.id===state?.queuedScoreId)$('saveMessage').textContent='Ergebnis in der öffentlichen Bestenliste gespeichert.';
           }
         };
         if(navigator.locks)await navigator.locks.request('mathetrainer-score-sync',send);
         else await send();
+        if(synced){if(!$('scores').classList.contains('hidden'))renderScores();if(!$('fractionScores').classList.contains('hidden'))renderFractionScores();}
       }catch{if(state?.queuedScoreId)$('saveMessage').textContent='Ergebnis ist auf diesem Gerät vorgemerkt. Der Abgleich wird später erneut versucht.';}
       finally{scoreSyncing=false;updateSyncNotice();}
     }
