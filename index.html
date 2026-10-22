@@ -154,8 +154,8 @@
       <div><label class="field-label" for="scoreRange">Zahlenraum</label><select id="scoreRange" name="scoreRange"><option value="10">Bis 10</option><option value="20">Bis 20</option><option value="100">Bis 100</option><option value="1000">Bis 1.000</option><option value="10000">Bis 10.000</option><option value="100000">Bis 100.000</option><option value="1000000">Bis 1 Million</option><option value="10000000">Bis 10 Millionen</option></select></div>
       <div><label class="field-label" for="scoreNumberType">Zahlenart</label><select id="scoreNumberType"><option value="any">Beliebige Zahlen</option><option value="tens">Glatte Zehner</option><option value="hundreds">Glatte Hunderter</option><option value="thousands">Glatte Tausender</option></select></div>
       <div id="scoreSmallTablesArea" class="hidden"><label class="choice"><input id="scoreSmallTables" type="checkbox"><span>Kleines Einmaleins (1 bis 10)</span></label></div>
-      <div class="divider" style="margin:0"></div><div id="scoreContent"></div><p class="note" style="margin:0">Alle Einträge dieser Bestenliste sind öffentlich sichtbar. Für einen Eintrag reicht ein Name oder Kürzel.</p></div></div></section>
-    <section id="fractionScores" class="hidden panel" aria-labelledby="fractionScoresTitle"><button class="link back" data-home type="button">← Zur Startseite</button><p class="eyebrow">Brüche</p><h1 id="fractionScoresTitle">Bestenliste</h1><p class="intro">Sortiert nach Sternen, dann Trefferquote und richtigen Eingaben. Ältere Ergebnisse sind als bisherige Wertung gekennzeichnet.</p><div class="card stack"><div><span class="field-label">Aufgabentypen</span><div class="choices"><label class="choice"><input type="checkbox" name="fractionScoreMode" value="picture" checked><span>Bild</span></label><label class="choice"><input type="checkbox" name="fractionScoreMode" value="mixed" checked><span>Bruch → gemischt</span></label><label class="choice"><input type="checkbox" name="fractionScoreMode" value="improper" checked><span>Gemischt → Bruch</span></label></div></div><div><span class="field-label">Zeit</span><div class="choices"><label class="choice"><input type="radio" name="fractionScoreDuration" value="5" checked><span>5 Minuten</span></label><label class="choice"><input type="radio" name="fractionScoreDuration" value="10"><span>10 Minuten</span></label></div></div><div id="fractionScoreContent"></div><p class="note">Namen und Ergebnisse sind öffentlich sichtbar.</p></div></section>
+      <div class="divider" style="margin:0"></div><p id="scoreStatus" class="note" role="status" style="margin:0"></p><div id="scoreContent"></div><p class="note" style="margin:0">Alle Einträge dieser Bestenliste sind öffentlich sichtbar. Für einen Eintrag reicht ein Name oder Kürzel.</p></div></div></section>
+    <section id="fractionScores" class="hidden panel" aria-labelledby="fractionScoresTitle"><button class="link back" data-home type="button">← Zur Startseite</button><p class="eyebrow">Brüche</p><h1 id="fractionScoresTitle">Bestenliste</h1><p class="intro">Sortiert nach Sternen, dann Trefferquote und richtigen Eingaben. Ältere Ergebnisse sind als bisherige Wertung gekennzeichnet.</p><div class="card stack"><div><span class="field-label">Aufgabentypen</span><div class="choices"><label class="choice"><input type="checkbox" name="fractionScoreMode" value="picture" checked><span>Bild</span></label><label class="choice"><input type="checkbox" name="fractionScoreMode" value="mixed" checked><span>Bruch → gemischt</span></label><label class="choice"><input type="checkbox" name="fractionScoreMode" value="improper" checked><span>Gemischt → Bruch</span></label></div></div><div><span class="field-label">Zeit</span><div class="choices"><label class="choice"><input type="radio" name="fractionScoreDuration" value="5" checked><span>5 Minuten</span></label><label class="choice"><input type="radio" name="fractionScoreDuration" value="10"><span>10 Minuten</span></label></div></div><p id="fractionScoreStatus" class="note" role="status" style="margin:0"></p><div id="fractionScoreContent"></div><p class="note">Namen und Ergebnisse sind öffentlich sichtbar.</p></div></section>
     <section id="levels" class="hidden panel" aria-labelledby="levelsTitle"><button class="link back" data-home type="button">← Zur Startseite</button><p class="eyebrow">Stufenmodus · Addition</p><h1 id="levelsTitle">Deine Stufen</h1><p class="intro">20 Aufgaben je Stufe. Ab 16 richtigen Antworten wird die nächste Stufe freigeschaltet. 10 richtige ergeben einen Stern, eine falsche zieht ¼ Stern ab.</p>
       <div id="authPanel" class="card"><h2>Ohne Passwort anmelden</h2><p class="muted">Gib ein Kürzel und deine E-Mail ein. Du erhältst einen Anmeldelink; dein Fortschritt ist danach auch auf anderen Geräten verfügbar.</p><form id="loginForm" class="auth-form"><label for="loginNickname">Kürzel</label><input id="loginNickname" maxlength="20" required autocomplete="nickname" placeholder="Dein Kürzel"><label for="loginEmail">E-Mail</label><input id="loginEmail" type="email" required autocomplete="email" placeholder="deine@email.de"><button class="btn" type="submit">Anmeldelink senden</button></form><p id="authMessage" class="note" role="status"></p></div>
       <div id="profilePanel" class="card hidden"><h2>Dein Kürzel</h2><p class="muted">Unter diesem Kürzel wird dein Stufenfortschritt angezeigt.</p><form id="profileForm" class="auth-form"><input id="profileNickname" maxlength="20" required autocomplete="nickname" placeholder="Dein Kürzel"><button class="btn" type="submit">Kürzel speichern</button></form><p id="profileMessage" class="note" role="status"></p></div>
@@ -177,11 +177,13 @@
     const checkedOperations=name=>OPERATIONS.filter(op=>document.querySelector(`input[name="${name}"][value="${op}"]`).checked);
     const onlyProducts=ops=>ops.length>0&&ops.every(op=>op==='multiplication'||op==='division');
     function updateTableOptions(){const setup=checkedOperations('operation'),score=checkedOperations('scoreOperation');$('smallTablesArea').classList.toggle('hidden',!onlyProducts(setup)||$('numberType').value!=='any');$('scoreSmallTablesArea').classList.toggle('hidden',!onlyProducts(score)||$('scoreNumberType').value!=='any');}
-    let active=false, interval=null, state=null, deadline=0, previous='', typed='', scoreRequest=0, session=null, profile=null, levelProgress={};
-    const SCORE_QUEUE_KEY='mathetrainer-pending-scores-v1';
+    let active=false, interval=null, state=null, deadline=0, previous='', typed='', session=null, profile=null, levelProgress={};
+    const SCORE_QUEUE_KEY='mathetrainer-pending-scores-v1',SCORE_CACHE_KEY='mathetrainer-leaderboards-v1';
     let scoreSyncing=false;
+    function readScoreSnapshot(){try{const value=JSON.parse(localStorage.getItem(SCORE_CACHE_KEY)||'null');return value&&typeof value.updatedAt==='string'&&value.groups&&typeof value.groups==='object'?value:null;}catch{return null;}}
+    let scoreSnapshot=readScoreSnapshot(),scoreRefresh=null,scoreRefreshFailed=false,lastScoreRefreshAttempt=0,scoreCacheSaved=true;
     function pendingScores(){try{const rows=JSON.parse(localStorage.getItem(SCORE_QUEUE_KEY)||'[]');return Array.isArray(rows)?rows:[];}catch{return [];}}
-    function writePendingScores(rows){localStorage.setItem(SCORE_QUEUE_KEY,JSON.stringify(rows));updateSyncNotice();}
+    function writePendingScores(rows){localStorage.setItem(SCORE_QUEUE_KEY,JSON.stringify(rows));updateSyncNotice();refreshVisibleScores();}
     function updateSyncNotice(){const count=pendingScores().length;$('syncNotice').classList.toggle('hidden',!count);$('syncText').textContent=`${count} ${count===1?'Ergebnis wartet':'Ergebnisse warten'} auf den Abgleich. Die Daten sind nur auf diesem Gerät gespeichert.`;$('syncNow').disabled=scoreSyncing||!navigator.onLine;}
     async function scoreExists(row){
       const url=new URL(`${SUPABASE_URL}/rest/v1/mt_scores`);
@@ -206,6 +208,7 @@
               const response=await fetch(`${SUPABASE_URL}/rest/v1/mt_scores`,{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(entry.row)});
               if(!response.ok)throw new Error(`HTTP ${response.status}`);
             }
+            rememberSyncedScore(entry.row);
             writePendingScores(pendingScores().filter(saved=>saved.id!==entry.id));
             synced=true;
             if(entry.id===state?.queuedScoreId)$('saveMessage').textContent='Ergebnis in der öffentlichen Bestenliste gespeichert.';
@@ -213,7 +216,7 @@
         };
         if(navigator.locks)await navigator.locks.request('mathetrainer-score-sync',send);
         else await send();
-        if(synced){if(!$('scores').classList.contains('hidden'))renderScores();if(!$('fractionScores').classList.contains('hidden'))renderFractionScores();}
+        if(synced){await refreshScoreSnapshot(true);refreshVisibleScores();}
       }catch{if(state?.queuedScoreId)$('saveMessage').textContent='Ergebnis ist auf diesem Gerät vorgemerkt. Der Abgleich wird später erneut versucht.';}
       finally{scoreSyncing=false;updateSyncNotice();}
     }
@@ -349,11 +352,43 @@
     const scoreStarUnits=row=>Math.max(0,Number(row.correct_count)*2-(Number(row.attempt_count)-Number(row.correct_count))*5);
     const scoreAccuracy=row=>Number(row.correct_count)/Number(row.attempt_count);
     function rankScores(rows){return rows.filter(row=>row&&row.attempt_count>0).sort((a,b)=>scoreStarUnits(b)-scoreStarUnits(a)||scoreAccuracy(b)-scoreAccuracy(a)||b.correct_count-a.correct_count||new Date(a.created_at)-new Date(b.created_at)).slice(0,10);}
+    const scoreGroupKey=row=>JSON.stringify([row.operation_mode,row.duration_seconds,row.small_tables,row.operand_count,row.number_type,row.range_max]);
+    const scoreIdentity=row=>JSON.stringify([new Date(row.created_at).getTime(),row.player_name,row.operation_mode,row.correct_count,row.attempt_count]);
+    function saveScoreSnapshot(){if(!scoreSnapshot)return;try{localStorage.setItem(SCORE_CACHE_KEY,JSON.stringify(scoreSnapshot));scoreCacheSaved=true;}catch{scoreCacheSaved=false;}}
+    function rememberSyncedScore(row){const key=scoreGroupKey(row);if(!scoreSnapshot)scoreSnapshot={updatedAt:new Date().toISOString(),groups:{},partial:true};const stored=scoreSnapshot.groups[key]||[];scoreSnapshot.groups[key]=rankScores(stored.some(saved=>scoreIdentity(saved)===scoreIdentity(row))?stored:[...stored,row]);saveScoreSnapshot();}
+    function refreshVisibleScores(){if(!$('scores').classList.contains('hidden'))drawScoreBoard('scores');if(!$('fractionScores').classList.contains('hidden'))drawScoreBoard('fractionScores');}
+    async function refreshScoreSnapshot(force=false){
+      if(scoreRefresh){if(!force)return scoreRefresh;await scoreRefresh;}
+      if(!navigator.onLine)return false;
+      if(!force&&Date.now()-lastScoreRefreshAttempt<(scoreRefreshFailed?60000:300000))return false;
+      lastScoreRefreshAttempt=Date.now();scoreRefreshFailed=false;
+      scoreRefresh=(async()=>{
+        try{
+          const url=new URL(`${SUPABASE_URL}/rest/v1/mt_scores`);
+          url.searchParams.set('select','player_name,correct_count,attempt_count,created_at,operation_mode,duration_seconds,small_tables,operand_count,number_type,range_max,points');
+          url.searchParams.set('order','created_at.asc');
+          const groups={};
+          for(const row of await fetchAllScores(url)){
+            const key=scoreGroupKey(row);
+            (groups[key]??=[]).push(row);
+          }
+          for(const key of Object.keys(groups))groups[key]=rankScores(groups[key]);
+          scoreSnapshot={updatedAt:new Date().toISOString(),groups};saveScoreSnapshot();
+          return true;
+        }catch{scoreRefreshFailed=true;return false;}
+        finally{scoreRefresh=null;refreshVisibleScores();}
+      })();
+      refreshVisibleScores();
+      return scoreRefresh;
+    }
     async function fetchAllScores(url){
       const rows=[];
       for(let offset=0;;offset+=1000){
         url.searchParams.set('limit','1000');url.searchParams.set('offset',String(offset));
-        const response=await fetch(url,{headers:{apikey:SUPABASE_KEY},cache:'no-store'});
+        const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+        let response;
+        try{response=await fetch(url,{headers:{apikey:SUPABASE_KEY},cache:'no-store',signal:controller.signal});}
+        finally{clearTimeout(timeout);}
         if(!response.ok)throw new Error(`HTTP ${response.status}`);
         const page=await response.json();rows.push(...page);
         if(page.length<1000)return rows;
@@ -375,44 +410,32 @@
         const date=document.createElement('span');const timestamp=new Date(r.created_at);
         date.textContent=Number.isNaN(timestamp.getTime())?'Datum unbekannt':`${dateFormatter.format(timestamp)} Uhr`;
         const stats=document.createElement('span');const fraction=r.operation_mode?.startsWith('fraction:');
-        stats.textContent=`${Math.round(scoreAccuracy(r)*100)} % · ${fmt(r.correct_count)} ${fraction?(r.points==null?'Aufgaben richtig · bisherige Wertung':'Eingaben richtig'):'richtig'}`;
+        stats.textContent=`${Math.round(scoreAccuracy(r)*100)} % · ${fmt(r.correct_count)} ${fraction?(r.points==null?'Aufgaben richtig · bisherige Wertung':'Eingaben richtig'):'richtig'}${r.localOnly?' · nur lokal':''}`;
         detail.append(date,stats);item.append(main,detail);list.append(item);
       });
       target.append(list);
     }
-    async function renderScores(){
-      const request=++scoreRequest,duration=selected('scoreDuration'),range=selected('scoreRange'),operandCount=selected('scoreOperandCount'),numberType=$('scoreNumberType').value,operations=checkedOperations('scoreOperation'),smallTables=onlyProducts(operations)&&numberType==='any'&&$('scoreSmallTables').checked,target=$('scoreContent');
-      if(!operations.length){target.textContent='Bitte mindestens eine Rechenart wählen.';return;}
-      target.textContent='Bestenliste wird geladen …';
-      try{
-        const url=new URL(`${SUPABASE_URL}/rest/v1/mt_scores`);
-        url.searchParams.set('select','player_name,correct_count,attempt_count,created_at');
-        url.searchParams.set('operation_mode',`eq.${operations.join(',')}`);
-        url.searchParams.set('small_tables',`eq.${smallTables}`);
-        url.searchParams.set('operand_count',`eq.${operandCount}`);
-        url.searchParams.set('number_type',`eq.${numberType}`);
-        url.searchParams.set('duration_seconds',`eq.${duration*60}`);
-        url.searchParams.set('range_max',`eq.${range}`);
-        url.searchParams.set('order','created_at.asc');
-        const data=await fetchAllScores(url);
-        if(request===scoreRequest)displayScores(target,rankScores(data));
-      }catch(error){if(request===scoreRequest)target.textContent='Bestenliste derzeit nicht erreichbar. Bitte später erneut versuchen.';}
+    function drawScoreBoard(kind){
+      const fraction=kind==='fraction',target=$(fraction?'fractionScoreContent':'scoreContent'),status=$(fraction?'fractionScoreStatus':'scoreStatus');
+      const operations=fraction?fractionChoices('fractionScoreMode'):checkedOperations('scoreOperation');
+      if(!operations.length){target.textContent=fraction?'Bitte mindestens einen Aufgabentyp wählen.':'Bitte mindestens eine Rechenart wählen.';status.textContent='';return;}
+      const row=fraction?{operation_mode:`fraction:${operations.join(',')}`,duration_seconds:selected('fractionScoreDuration')*60,small_tables:false,operand_count:2,number_type:'any',range_max:10}:{operation_mode:operations.join(','),duration_seconds:selected('scoreDuration')*60,small_tables:onlyProducts(operations)&&$('scoreNumberType').value==='any'&&$('scoreSmallTables').checked,operand_count:selected('scoreOperandCount'),number_type:$('scoreNumberType').value,range_max:selected('scoreRange')};
+      const key=scoreGroupKey(row),cached=scoreSnapshot?.groups[key]||[],pending=pendingScores().filter(entry=>scoreGroupKey(entry.row)===key).map(entry=>({...entry.row,localOnly:true}));
+      const seen=new Set(cached.map(scoreIdentity)),rows=rankScores([...cached,...pending.filter(entry=>!seen.has(scoreIdentity(entry)))]);
+      if(rows.length)displayScores(target,rows);
+      else target.textContent=scoreSnapshot?'Noch keine Ergebnisse für diese Auswahl.':'Auf diesem Gerät ist noch keine Bestenliste gespeichert.';
+      const date=scoreSnapshot&&new Date(scoreSnapshot.updatedAt);
+      const dateText=date&&!Number.isNaN(date.getTime())?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Berlin'}).format(date):'';
+      const parts=[scoreSnapshot?(scoreSnapshot.partial?'Nur lokal bekannte Ergebnisse.':`Gespeicherter Stand: ${dateText} Uhr.`):'Noch kein Serverstand auf diesem Gerät.'];
+      if(!navigator.onLine||scoreRefreshFailed)parts.push('Kein Serverkontakt.');
+      else if(scoreRefresh)parts.push('Aktualisierung läuft …');
+      if(pending.length)parts.push(`${pending.length} ${pending.length===1?'Ergebnis':'Ergebnisse'} nur lokal, noch nicht abgeglichen.`);
+      if(!scoreCacheSaved)parts.push('Der neue Serverstand konnte nicht dauerhaft auf diesem Gerät gespeichert werden.');
+      status.textContent=parts.join(' ');
     }
+    function renderScores(){drawScoreBoard('scores');refreshScoreSnapshot().then(()=>{if(!$('scores').classList.contains('hidden'))drawScoreBoard('scores');});}
     function scores(){if(state?.kind==='timed'){choose('scoreDuration',state.duration);choose('scoreRange',state.range);choose('scoreOperandCount',state.operandCount);$('scoreNumberType').value=state.numberType;document.querySelectorAll('input[name="scoreOperation"]').forEach(el=>el.checked=state.operations.includes(el.value));$('scoreSmallTables').checked=state.smallTables;}updateTableOptions();show('scores');renderScores();}
-    async function renderFractionScores(){
-      const request=++scoreRequest,modes=fractionChoices('fractionScoreMode'),target=$('fractionScoreContent');
-      if(!modes.length){target.textContent='Bitte mindestens einen Aufgabentyp wählen.';return;}
-      target.textContent='Bestenliste wird geladen …';
-      try{
-        const url=new URL(`${SUPABASE_URL}/rest/v1/mt_scores`);
-        url.searchParams.set('select','player_name,correct_count,attempt_count,created_at,operation_mode,points');
-        url.searchParams.set('operation_mode',`eq.fraction:${modes.join(',')}`);
-        url.searchParams.set('duration_seconds',`eq.${selected('fractionScoreDuration')*60}`);
-        url.searchParams.set('order','created_at.asc');
-        const data=await fetchAllScores(url);
-        if(request===scoreRequest)displayScores(target,rankScores(data));
-      }catch{if(request===scoreRequest)target.textContent='Bestenliste derzeit nicht erreichbar. Bitte später erneut versuchen.';}
-    }
+    function renderFractionScores(){drawScoreBoard('fractionScores');refreshScoreSnapshot().then(()=>{if(!$('fractionScores').classList.contains('hidden'))drawScoreBoard('fractionScores');});}
     function fractionScores(){if(state?.kind==='fraction'){choose('fractionScoreDuration',state.duration);document.querySelectorAll('input[name="fractionScoreMode"]').forEach(el=>el.checked=state.fractionModes.includes(el.value));}show('fractionScores');renderFractionScores();}
     const LEVELS=[
       ['Kleine Summen',10,2,2,'small'],['Alles bis 10',10,2,2,'all'],
@@ -487,17 +510,17 @@
     };
     $('playerName').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();$('playerName').blur();if(!$('saveScore').disabled)$('saveScore').click();}});
     $('syncNow').onclick=flushPendingScores;
-    window.addEventListener('online',flushPendingScores);
-    window.addEventListener('storage',event=>{if(event.key===SCORE_QUEUE_KEY)updateSyncNotice();});
-    setInterval(()=>{if(!document.hidden)flushPendingScores();},60000);
+    window.addEventListener('online',async()=>{await flushPendingScores();await refreshScoreSnapshot();refreshVisibleScores();});
+    window.addEventListener('storage',event=>{if(event.key===SCORE_QUEUE_KEY){updateSyncNotice();refreshVisibleScores();}if(event.key===SCORE_CACHE_KEY){scoreSnapshot=readScoreSnapshot();refreshVisibleScores();}});
+    setInterval(()=>{if(!document.hidden){flushPendingScores();refreshScoreSnapshot().then(refreshVisibleScores);}},60000);
     document.querySelectorAll('input[name="operation"],#numberType').forEach(el=>el.addEventListener('change',()=>{updateTableOptions();$('operationError').textContent='';}));
     document.querySelectorAll('input[name="scoreOperation"],input[name="scoreDuration"],input[name="scoreOperandCount"],#scoreRange,#scoreNumberType,#scoreSmallTables').forEach(el=>el.addEventListener('change',()=>{updateTableOptions();renderScores();}));
     document.querySelectorAll('input[name="fractionMode"]').forEach(el=>el.addEventListener('change',()=>{$('fractionError').textContent='';}));
     document.querySelectorAll('input[name="fractionScoreMode"],input[name="fractionScoreDuration"]').forEach(el=>el.addEventListener('change',renderFractionScores));
     updateTableOptions();
     if(client)client.auth.getSession().then(({data})=>{if(data.session&&localStorage.getItem('mathetrainer-pending-nickname'))openLevels();});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden){tick();flushPendingScores();}});
-    updateSyncNotice();flushPendingScores();
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){tick();flushPendingScores();refreshScoreSnapshot().then(refreshVisibleScores);}});
+    updateSyncNotice();flushPendingScores();refreshScoreSnapshot().then(refreshVisibleScores);
     if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
     window.visualViewport?.addEventListener('resize',syncGameHeight);
     window.addEventListener('resize',syncGameHeight);
