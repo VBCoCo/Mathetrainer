@@ -416,7 +416,7 @@
       target.append(list);
     }
     function drawScoreBoard(kind){
-      const fraction=kind==='fraction',target=$(fraction?'fractionScoreContent':'scoreContent'),status=$(fraction?'fractionScoreStatus':'scoreStatus');
+      const fraction=kind==='fractionScores',target=$(fraction?'fractionScoreContent':'scoreContent'),status=$(fraction?'fractionScoreStatus':'scoreStatus');
       const operations=fraction?fractionChoices('fractionScoreMode'):checkedOperations('scoreOperation');
       if(!operations.length){target.textContent=fraction?'Bitte mindestens einen Aufgabentyp wählen.':'Bitte mindestens eine Rechenart wählen.';status.textContent='';return;}
       const row=fraction?{operation_mode:`fraction:${operations.join(',')}`,duration_seconds:selected('fractionScoreDuration')*60,small_tables:false,operand_count:2,number_type:'any',range_max:10}:{operation_mode:operations.join(','),duration_seconds:selected('scoreDuration')*60,small_tables:onlyProducts(operations)&&$('scoreNumberType').value==='any'&&$('scoreSmallTables').checked,operand_count:selected('scoreOperandCount'),number_type:$('scoreNumberType').value,range_max:selected('scoreRange')};
