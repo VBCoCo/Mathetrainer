@@ -398,7 +398,7 @@
       scoreRefresh=(async()=>{
         try{
           const url=new URL(`${SUPABASE_URL}/rest/v1/mt_scores`);
-          url.searchParams.set('select','player_name,correct_count,attempt_count,created_at,operation_mode,duration_seconds,small_tables,operand_count,number_type,range_max,points');
+          url.searchParams.set('select','player_name,correct_count,attempt_count,created_at,operation_mode,duration_seconds,elapsed_seconds,small_tables,operand_count,number_type,range_max,points');
           url.searchParams.set('order','created_at.asc');
           const groups={};
           for(const row of await fetchAllScores(url)){
